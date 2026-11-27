@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="チャンプ構築診断">
+<meta name="theme-color" content="#0d111a">
+<title>Pokémon Champions シングル構築診断（スマホ快適版）</title>
+<style>
+  :root {
+    --bg: #0d111a;
+    --panel: #151c2c;
+    --panel-2: #1d273d;
+    --border: #2a3754;
+    --text: #eef3ff;
+    --muted: #93a4c8;
+    --accent: #38bdf8;
+    --good: #22c55e;
+    --warn: #f59e0b;
+    --danger: #ef4444;
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Hiragino Kaku Gothic ProN", "Yu Gothic", sans-serif;
+    line-height: 1.48;
+    overflow-x: hidden;
+  }
+
+  /* Sticky Top Header + Live Score Bar */
+  .top-sticky {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    background: rgba(13, 17, 26, 0.94);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--border);
+  }
+  .top-bar {
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 10px 14px 8px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+  }
+  .app-title {
+    font-size: 0.96rem;
+    font-weight: 800;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    white-space: nowrap;
+  }
+  .reg-pill {
+    font-size: 0.68rem;
+    padding: 2px 7px;
+    border-radius: 999px;
+    background: rgba(56,189,248,0.16);
+    color: var(--accent);
+    border: 1px solid rgba(56,189,248,0.45);
+  }
+  .mini-score {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+  .mini-grade { font-size: 1rem; font-weight: 900; }
+
+  /* Tabs */
+  .tabs-wrap {
+    max-width: 1180px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    padding: 0 8px 6px;
+    gap: 6px;
+  }
+  .tab-btn {
+    background: transparent;
+    color: var(--muted);
+    border: 1px solid transparent;
+    border-radius: 8px;
+    padding: 7px 4px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    cursor: pointer;
+    text-align: center;
+    transition: 0.15s;
+    position: relative;
+  }
+  .tab-btn.active {
+    background: var(--panel-2);
+    color: #fff;
+    border-color: var(--accent);
+  }
+  .tab-dot {
+    display: inline-block;
+    background: var(--danger);
+    color: #fff;
+    font-size: 0.65rem;
+    padding: 0 5px;
+    border-radius: 999px;
+    margin-left: 3px;
+    vertical-align: top;
+  }
+
+  .container {
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 12px 12px calc(32px + var(--safe-bottom));
+  }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  .card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 14px;
+    margin-bottom: 14px;
+  }
+  .card-title {
+    margin: 0 0 10px;
+    font-size: 0.98rem;
+    font-weight: 800;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 8px;
+  }
+
+  /* Buttons & Controls */
+  .btn {
+    background: var(--panel-2);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px 11px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    cursor: pointer;
+    touch-action: manipulation;
+  }
+  .btn:active { transform: scale(0.98); }
+  .btn-primary {
+    background: linear-gradient(135deg, #2563eb, #0284c7);
+    border-color: #38bdf8;
+    color: #fff;
+  }
+  .btn-danger { border-color: rgba(239,68,68,0.55); color: #fca5a5; }
+  .btn-sm { padding: 5px 9px; font-size: 0.74rem; }
+  .btn-block { width: 100%; padding: 12px; font-size: 0.92rem; }
+
+  /* Save Slots */
+  .save-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 10px;
+  }
+  .slot-tabs { display: flex; gap: 6px; }
+  .save-pill {
+    padding: 6px 12px;
+    border-radius: 999px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    background: var(--panel-2);
+    color: var(--muted);
+    border: 1px solid var(--border);
+    cursor: pointer;
+  }
+  .save-pill.active {
+    background: rgba(56,189,248,0.18);
+    color: #fff;
+    border-color: var(--accent);
+  }
+
+  /* Presets horizontal scroll on mobile */
+  .presets-scroll {
+    display: flex;
+    gap: 7px;
+    overflow-x: auto;
+    padding-bottom: 6px;
+    margin-bottom: 10px;
+    -webkit-overflow-scrolling: touch;
+  }
+  .presets-scroll .btn { white-space: nowrap; flex-shrink: 0; }
+
+  /* Party Grid - Zero horizontal overflow */
+  .party-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 330px), 1fr));
+    gap: 10px;
+  }
+  .slot {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 11px;
+  }
+  .slot.mega-active {
+    border-color: #c084fc;
+    box-shadow: 0 0 0 1px rgba(192,132,252,0.35);
+  }
+  .slot-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 7px;
+    font-size: 0.8rem;
+    color: var(--muted);
+  }
+  .slot-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 7px;
+    margin-bottom: 7px;
+  }
+  /* 16px on mobile prevents iOS Safari auto-zoom */
+  select {
+    width: 100%;
+    max-width: 100%;
+    background: #0f1625;
+    color: var(--text);
+    border: 1px solid #354569;
+    border-radius: 8px;
+    padding: 8px 8px;
+    font-size: 16px;
+  }
+  @media (min-width: 768px) {
+    select { font-size: 0.86rem; padding: 7px 8px; }
+  }
+  select:focus { outline: none; border-color: var(--accent); }
+
+  .slot-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    align-items: center;
+    font-size: 0.74rem;
+    color: var(--muted);
+    margin-top: 4px;
+  }
+  .type-badge {
+    display: inline-block;
+    padding: 1px 7px;
+    border-radius: 4px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: #fff;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.45);
+  }
+  .mega-tag {
+    background: linear-gradient(135deg, #a855f7, #ec4899);
+    color: #fff;
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-size: 0.68rem;
+    font-weight: 700;
+  }
+  .rank-tag {
+    background: rgba(255,255,255,0.08);
+    padding: 1px 6px;
+    border-radius: 4px;
+    color: #cbd5e1;
+  }
+
+  /* Dashboard */
+  .dash-grid {
+    display: grid;
+    grid-template-columns: 200px 1fr;
+    gap: 12px;
+  }
+  @media (max-width: 720px) { .dash-grid { grid-template-columns: 1fr; } }
+  .score-box {
+    background: linear-gradient(160deg, #17233d, #101727);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px;
+    text-align: center;
+  }
+  .grade-circle { font-size: 3rem; font-weight: 900; line-height: 1.05; margin: 2px 0; }
+  .score-num { font-size: 1.15rem; font-weight: 800; color: var(--accent); }
+  .bars-box {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 210px), 1fr));
+    gap: 9px;
+  }
+  .metric {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 9px;
+    padding: 10px;
+  }
+  .metric-head { display: flex; justify-content: space-between; font-size: 0.82rem; font-weight: 700; margin-bottom: 5px; }
+  .bar-bg { height: 7px; background: #0b101c; border-radius: 999px; overflow: hidden; margin-bottom: 5px; }
+  .bar-fill { height: 100%; border-radius: 999px; transition: width 0.3s ease; }
+  .metric-desc { font-size: 0.74rem; color: var(--muted); }
+
+  /* Lists & Cards */
+  .item-list { display: flex; flex-direction: column; gap: 9px; }
+  .alert-item {
+    background: var(--panel-2);
+    border-left: 4px solid var(--accent);
+    border-radius: 8px;
+    padding: 10px 11px;
+    font-size: 0.82rem;
+  }
+  .alert-item.high { border-left-color: var(--danger); }
+  .alert-item.mid { border-left-color: var(--warn); }
+  .alert-item.good { border-left-color: var(--good); }
+  .alert-title { font-weight: 700; margin-bottom: 4px; display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
+  .alert-body { color: #cbd5e1; font-size: 0.78rem; }
+
+  .pill {
+    display: inline-block;
+    padding: 2px 7px;
+    border-radius: 999px;
+    font-size: 0.69rem;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+  .pill-danger { background: rgba(239,68,68,0.2); color: #fca5a5; border: 1px solid rgba(239,68,68,0.5); }
+  .pill-warn { background: rgba(245,158,11,0.2); color: #fcd34d; border: 1px solid rgba(245,158,11,0.5); }
+  .pill-good { background: rgba(34,197,94,0.2); color: #86efac; border: 1px solid rgba(34,197,94,0.5); }
+  .pill-info { background: rgba(56,189,248,0.18); color: #7dd3fc; border: 1px solid rgba(56,189,248,0.45); }
+
+  .rec-card {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 11px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .rec-actions {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+    margin-top: 2px;
+  }
+  .rec-actions select {
+    width: auto;
+    min-width: 96px;
+    padding: 5px 7px;
+    font-size: 14px;
+  }
+
+  /* Threat Filter & Grid */
+  .filter-bar {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin-bottom: 10px;
+  }
+  .threat-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr));
+    gap: 9px;
+  }
+  .threat-card {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 9px;
+    padding: 10px;
+  }
+  .threat-card.severe { border-color: rgba(239,68,68,0.75); background: rgba(239,68,68,0.09); }
+  .threat-card.caution { border-color: rgba(245,158,11,0.6); background: rgba(245,158,11,0.06); }
+
+  /* Table */
+  .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  table { width: 100%; border-collapse: collapse; font-size: 0.76rem; min-width: 480px; }
+  th, td { border: 1px solid var(--border); padding: 5px 4px; text-align: center; }
+  th { background: #101727; color: var(--muted); font-weight: 700; }
+  .eff-4 { background: rgba(239,68,68,0.42); color: #fecaca; font-weight: 800; }
+  .eff-2 { background: rgba(239,68,68,0.22); color: #fca5a5; font-weight: 700; }
+  .eff-05 { background: rgba(34,197,94,0.2); color: #86efac; }
+  .eff-025 { background: rgba(34,197,94,0.38); color: #bbf7d0; font-weight: 700; }
+  .eff-0 { background: rgba(56,189,248,0.26); color: #bae6fd; font-weight: 700; }
+  .row-danger { background: rgba(239,68,68,0.09); }
+
+  .notice-box {
+    background: rgba(56,189,248,0.08);
+    border: 1px dashed rgba(56,189,248,0.4);
+    border-radius: 8px;
+    padding: 9px 11px;
+    font-size: 0.74rem;
+    color: var(--muted);
+    margin-top: 10px;
+  }
+
+  /* Toast */
+  .toast {
+    position: fixed;
+    left: 50%;
+    bottom: calc(20px + var(--safe-bottom));
+    transform: translateX(-50%) translateY(90px);
+    background: #1e293b;
+    color: #fff;
+    border: 1px solid var(--accent);
+    padding: 10px 16px;
+    border-radius: 999px;
+    font-size: 0.82rem;
+    font-weight: 700;
+    z-index: 200;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.45);
+    transition: transform 0.25s ease;
+    pointer-events: none;
+    white-space: nowrap;
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+
+<div class="top-sticky">
+  <div class="top-bar">
+    <div class="app-title">⚔️ チャンプ構築診断 <span class="reg-pill">M-C内定のみ</span></div>
+    <div class="mini-score" onclick="switchTab('diag')" title="診断タブへ移動">
+      <span>評価</span>
+      <span id="miniGrade" class="mini-grade">-</span>
+      <span id="miniScore" style="color:var(--accent);">0点</span>
+    </div>
+  </div>
+  <div class="tabs-wrap">
+    <button class="tab-btn active" id="tabBtn-edit" onclick="switchTab('edit')">📝 編成</button>
+    <button class="tab-btn" id="tabBtn-diag" onclick="switchTab('diag')">📊 診断・改善</button>
+    <button class="tab-btn" id="tabBtn-threat" onclick="switchTab('threat')">⚠️ 脅威<span id="threatBadge" class="tab-dot" style="display:none;">0</span></button>
+    <button class="tab-btn" id="tabBtn-matrix" onclick="switchTab('matrix')">🛡️ 相性・上位</button>
+  </div>
+</div>
+
+<div class="container">
+  <!-- TAB 1: 編成 -->
+  <div id="tab-edit" class="tab-panel active">
+    <div class="card">
+      <div class="save-bar">
+        <div class="slot-tabs">
+          <button class="save-pill active" id="saveBtn-0" onclick="selectSaveSlot(0)">構築A</button>
+          <button class="save-pill" id="saveBtn-1" onclick="selectSaveSlot(1)">構築B</button>
+          <button class="save-pill" id="saveBtn-2" onclick="selectSaveSlot(2)">構築C</button>
+        </div>
+        <div style="display:flex; gap:6px;">
+          <button class="btn btn-sm" onclick="copyPartyText()">📋 コピー</button>
+          <button class="btn btn-sm btn-danger" onclick="clearParty()">🗑 空にする</button>
+        </div>
+      </div>
+
+      <div style="font-size:0.74rem; color:var(--muted); margin-bottom:6px; font-weight:700;">上位構築サンプルを読み込む（横にスクロール可）：</div>
+      <div class="presets-scroll">
+        <button class="btn btn-sm" onclick="loadPreset('lucarioZ')">Tier1: メガルカリオZ対面</button>
+        <button class="btn btn-sm" onclick="loadPreset('kabamanda')">Tier1: カバマンダ＋サフゴ</button>
+        <button class="btn btn-sm" onclick="loadPreset('sunnyGuso')">M-7上位: 晴れムシキング</button>
+        <button class="btn btn-sm" onclick="loadPreset('floetteGab')">上位: フラエッテ＋ガブZ</button>
+        <button class="btn btn-sm" onclick="loadPreset('psychicBlastoise')">流行: イエッサン＋カメックス</button>
+        <button class="btn btn-sm" onclick="loadPreset('draft')">課題あり試作サンプル</button>
+      </div>
+
+      <div id="partyGrid" class="party-grid"></div>
+
+      <div style="margin-top:12px;">
+        <button class="btn btn-primary btn-block" onclick="switchTab('diag')">📊 このパーティの診断結果・改善点を見る →</button>
+      </div>
+
+      <div class="notice-box">
+        ※ 構築はブラウザに自動保存されます。メガストーンを持たせると自動でメガ後のタイプ・特性・Sラインで評価されます。未実装道具（ハチマキ・メガネ・チョッキ・ブーツ・ダイス等）は除外済みです。
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB 2: 診断・改善 -->
+  <div id="tab-diag" class="tab-panel">
+    <div class="card">
+      <div class="card-title">
+        <span>総合評価スコア</span>
+        <span id="summaryBadges" style="display:flex; gap:5px; flex-wrap:wrap;"></span>
+      </div>
+      <div class="dash-grid">
+        <div class="score-box">
+          <div style="font-size:0.78rem; color:var(--muted);">総合ランク</div>
+          <div id="gradeText" class="grade-circle">-</div>
+          <div id="scoreText" class="score-num">0 / 100点</div>
+          <div id="gradeComment" style="font-size:0.76rem; color:var(--muted); margin-top:4px;"></div>
+        </div>
+        <div id="metricsBox" class="bars-box"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><span>優先改善ポイント</span></div>
+      <div id="issuesList" class="item-list"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">
+        <span>おすすめ補完ポケモン＆内定道具 TOP5</span>
+        <span style="font-size:0.72rem; color:var(--muted);">入れ替え先を選んで即テスト可</span>
+      </div>
+      <div id="recList" class="item-list"></div>
+    </div>
+  </div>
+
+  <!-- TAB 3: きつい相手 -->
+  <div id="tab-threat" class="tab-panel">
+    <div class="card">
+      <div class="card-title">
+        <span>相手に来たらきついポケモン（主要24体）</span>
+        <span id="threatSummary" style="font-size:0.76rem; color:var(--muted);"></span>
+      </div>
+      <div class="filter-bar">
+        <button class="save-pill active" id="thFilt-all" onclick="setThreatFilter('all')">すべて (24)</button>
+        <button class="save-pill" id="thFilt-severe" onclick="setThreatFilter('severe')">🚨 きついのみ</button>
+        <button class="save-pill" id="thFilt-warn" onclick="setThreatFilter('warn')">⚠️ 要注意以上</button>
+      </div>
+      <div id="threatGrid" class="threat-grid"></div>
+    </div>
+  </div>
+
+  <!-- TAB 4: 相性・上位構築 -->
+  <div id="tab-matrix" class="tab-panel">
+    <div class="card">
+      <div class="card-title">
+        <span>防御タイプ相性表（特性・風船・半減実込み）</span>
+        <span style="font-size:0.72rem; color:var(--muted);">横にスクロール可</span>
+      </div>
+      <div class="table-wrap" id="typeTableWrap"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><span>上位構築アーキタイプとの照合・相性</span></div>
+      <div id="archetypeList" class="item-list"></div>
+    </div>
+  </div>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script>
+const TYPES = [
+  'ノーマル','ほのお','みず','でんき','くさ','こおり',
+  'かくとう','どく','じめん','ひこう','エスパー','むし',
+  'いわ','ゴースト','ドラゴン','あく','はがね','フェアリー'
+];
+const TYPE_COLOR = {
+  'ノーマル':'#9ca3af','ほのお':'#ea580c','みず':'#2563eb','でんき':'#ca8a04',
+  'くさ':'#16a34a','こおり':'#0891b2','かくとう':'#b91c1c','どく':'#9333ea',
+  'じめん':'#b45309','ひこう':'#6366f1','エスパー':'#db2777','むし':'#65a30d',
+  'いわ':'#78716c','ゴースト':'#5b21b6','ドラゴン':'#4f46e5','あく':'#374151',
+  'はがね':'#475569','フェアリー':'#ec4899'
+};
+const CHART = {
+  'ノーマル': {'いわ':0.5,'ゴースト':0,'はがね':0.5},
+  'ほのお': {'ほのお':0.5,'みず':0.5,'くさ':2,'こおり':2,'むし':2,'いわ':0.5,'ドラゴン':0.5,'はがね':2},
+  'みず': {'ほのお':2,'みず':0.5,'くさ':0.5,'じめん':2,'いわ':2,'ドラゴン':0.5},
+  'でんき': {'みず':2,'でんき':0.5,'くさ':0.5,'じめん':0,'ひこう':2,'ドラゴン':0.5},
+  'くさ': {'ほのお':0.5,'みず':2,'くさ':0.5,'どく':0.5,'じめん':2,'ひこう':0.5,'むし':0.5,'いわ':2,'ドラゴン':0.5,'はがね':0.5},
+  'こおり': {'ほのお':0.5,'みず':0.5,'くさ':2,'こおり':0.5,'じめん':2,'ひこう':2,'ドラゴン':2,'はがね':0.5},
+  'かくとう': {'ノーマル':2,'こおり':2,'どく':0.5,'ひこう':0.5,'エスパー':0.5,'むし':0.5,'いわ':2,'ゴースト':0,'あく':2,'はがね':2,'フェアリー':0.5},
+  'どく': {'くさ':2,'どく':0.5,'じめん':0.5,'いわ':0.5,'ゴースト':0.5,'はがね':0,'フェアリー':2},
+  'じめん': {'ほのお':2,'でんき':2,'くさ':0.5,'どく':2,'ひこう':0,'むし':0.5,'いわ':2,'はがね':2},
+  'ひこう': {'でんき':0.5,'くさ':2,'かくとう':2,'むし':2,'いわ':0.5,'はがね':0.5},
+  'エスパー': {'かくとう':2,'どく':2,'エスパー':0.5,'あく':0,'はがね':0.5},
+  'むし': {'ほのお':0.5,'くさ':2,'かくとう':0.5,'どく':0.5,'ひこう':0.5,'エスパー':2,'ゴースト':0.5,'あく':2,'はがね':0.5,'フェアリー':0.5},
+  'いわ': {'ほのお':2,'こおり':2,'かくとう':0.5,'じめん':0.5,'ひこう':2,'むし':2,'はがね':0.5},
+  'ゴースト': {'ノーマル':0,'エスパー':2,'ゴースト':2,'あく':0.5},
+  'ドラゴン': {'ドラゴン':2,'はがね':0.5,'フェアリー':0},
+  'あく': {'かくとう':0.5,'エスパー':2,'ゴースト':2,'あく':0.5,'フェアリー':0.5},
+  'はがね': {'ほのお':0.5,'みず':0.5,'でんき':0.5,'こおり':2,'いわ':2,'はがね':0.5,'フェアリー':2},
+  'フェアリー': {'ほのお':0.5,'かくとう':2,'どく':0.5,'ドラゴン':2,'あく':2,'はがね':0.5}
+};
+function typeEff(atkType, defTypes) {
+  let m = 1;
+  for (const dt of defTypes) {
+    const val = CHART[atkType]?.[dt];
+    if (val !== undefined) m *= val;
+  }
+  return m;
+}
+
+const GENERAL_ITEMS = [
+  'きあいのタスキ','こだわりスカーフ','いのちのたま','たべのこし','オボンのみ','ラムのみ',
+  'ゴツゴツメット','ふうせん','レッドカード','だっしゅつボタン','ひかりのねんど','グランドコート',
+  'たつじんのおび','ちからのハチマキ','ものしりメガネ','しろいハーブ','メンタルハーブ',
+  'ピントレンズ','こうかくレンズ','フォーカスレンズ','メトロノーム','おおきなねっこ',
+  'くろいてっきゅう','きれいなぬけがら','しめつけバンド','ノーマルジュエル',
+  'エレキシード','グラスシード','サイコシード','ミストシード',
+  'あついいわ','しめったいわ','さらさらいわ','つめたいいわ',
+  'のろいのおふだ(1.2倍)','もくたん(1.2倍)','しんぴのしずく(1.2倍)','くろおび(1.2倍)','きせきのタネ(1.2倍)','ようせいのハネ(1.2倍)','メタルコート(1.2倍)','くろいメガネ(1.2倍)','まがったスプーン(1.2倍)','りゅうのキバ(1.2倍)','とけないこおり(1.2倍)','やわらかいすな(1.2倍)','じしゃく(1.2倍)','どくバリ(1.2倍)','するどいくちばし(1.2倍)','ぎんのこな(1.2倍)','かたいいし(1.2倍)','シルクのスカーフ(1.2倍)',
+  'シュカのみ(地面半減)','ヨプのみ(格闘半減)','リリバのみ(鋼半減)','オッカのみ(炎半減)','ヤチェのみ(氷半減)','ソクノのみ(電気半減)','ナモのみ(悪半減)','カシブのみ(霊半減)','ロゼルのみ(妖半減)','バコウのみ(飛行半減)','ウタンのみ(超半減)','ビアーのみ(毒半減)','イトケのみ(水半減)','リンドのみ(草半減)','ヨロギのみ(岩半減)','ハバンのみ(龍半減)'
+];
+const BERRY_RESIST = {
+  'シュカのみ(地面半減)':'じめん','ヨプのみ(格闘半減)':'かくとう','リリバのみ(鋼半減)':'はがね',
+  'オッカのみ(炎半減)':'ほのお','ヤチェのみ(氷半減)':'こおり','ソクノのみ(電気半減)':'でんき',
+  'ナモのみ(悪半減)':'あく','カシブのみ(霊半減)':'ゴースト','ロゼルのみ(妖半減)':'フェアリー',
+  'バコウのみ(飛行半減)':'ひこう','ウタンのみ(超半減)':'エスパー','ビアーのみ(毒半減)':'どく',
+  'イトケのみ(水半減)':'みず','リンドのみ(草半減)':'くさ','ヨロギのみ(岩半減)':'いわ','ハバンのみ(龍半減)':'ドラゴン'
+};
+const ROLES = [
+  '物理アタッカー'
